@@ -1,53 +1,39 @@
 # .github/workflows/deploy-pages.yml
 
-name: Deploy Simple HTML Site to Pages
+name: Deploy to Pages
 
-# Run workflow on pushes to the main branch
+
 on:
   push:
     branches:
-      - main # Or 'master' if that's your default branch
-  # Allows you to run this workflow manually from the Actions tab
+      - main
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN for deployment
-permissions:
-  contents: read    # Allows checkout of the code
-  pages: write      # Allows deployment to GitHub Pages
-  id-token: write   # Allows for OIDC token generation for authentication
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# Do not cancel in-progress runs as we want to allow these production deployments to complete.
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+permissions:
+  contents: read   
+  pages: write     
+  id-token: write  
+
+
 
 jobs:
-  # Single job for deployment since there's no build step needed
   deploy:
-    # Define the environment for deployment (GitHub Pages)
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }} # Output the deployed URL
 
-    # Use the latest Ubuntu runner
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4 # Gets your code
+        uses: actions/checkout@v4
 
       - name: Setup Pages
-        uses: actions/configure-pages@v5 # Configures GitHub Pages settings
+        uses: actions/configure-pages@v5
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3 # Uploads site content
+        uses: actions/upload-pages-artifact@v3
         with:
-          # Upload the entire repository root (since it's just HTML/CSS/JS)
-          # Assumes your index.html is in the root directory.
-          # If your files are in a subfolder (e.g., 'public' or 'site'), change '.' to './public' or './site'.
           path: '.'
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4 # Performs the deployment
+        uses: actions/deploy-pages@v4 
