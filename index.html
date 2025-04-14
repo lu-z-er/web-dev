@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Calculator</title>
+    <style>
+        /* --- CSS Code Starts Here --- */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #e0e0e0; /* Light grey background */
+            font-family: 'Arial', sans-serif;
+        }
+
+        .calculator {
+            background-color: #4a4a4a; /* Darker grey calculator body */
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+            width: 320px;
+        }
+
+        #display {
+            width: 100%;
+            height: 70px;
+            background-color: #2a2a2a; /* Very dark display background */
+            border: none;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            padding: 15px;
+            font-size: 2.2em;
+            text-align: right;
+            color: #ffffff; /* White text */
+            box-sizing: border-box;
+            overflow: hidden;
+            letter-spacing: 1px;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); /* 4 columns */
+            gap: 12px; /* Space between buttons */
+        }
+
+        .btn {
+            padding: 18px;
+            font-size: 1.3em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background-color: #6d6d6d; /* Standard button color */
+            color: #ffffff;
+            transition: background-color 0.2s ease, transform 0.1s ease; /* Smooth transitions */
+        }
+
+        .btn:hover {
+            background-color: #7e7e7e; /* Lighter grey on hover */
+        }
+
+        .btn:active {
+            background-color: #8f8f8f; /* Even lighter when pressed */
+            transform: scale(0.98); /* Slight shrink effect on click */
+        }
+
+        .operator {
+            background-color: #ff9f0a; /* Orange for operators */
+        }
+
+        .operator:hover {
+            background-color: #fcae3a;
+        }
+
+        .operator:active {
+            background-color: #fdbf5c;
+        }
+
+        .clear {
+            background-color: #f56c6c; /* Red for clear */
+        }
+        .clear:hover {
+            background-color: #f78989;
+        }
+        .clear:active {
+            background-color: #f9a6a6;
+        }
+
+        .equals {
+            background-color: #67c23a; /* Green for equals */
+        }
+        .equals:hover {
+            background-color: #85ce61;
+        }
+        .equals:active {
+            background-color: #a3da88;
+        }
+
+        /* Make specific buttons span multiple grid columns */
+        .span-2 {
+            grid-column: span 2;
+        }
+        /* --- CSS Code Ends Here --- */
+    </style>
+</head>
+<body>
+
+    <div class="calculator">
+        <input type="text" id="display" disabled> <div class="buttons">
+            <button onclick="clearDisplay()" class="btn clear span-2">C</button>
+            <button onclick="deleteLast()" class="btn operator">DEL</button>
+            <button onclick="appendOperator('/')" class="btn operator">/</button>
+
+            <button onclick="appendNumber('7')" class="btn">7</button>
+            <button onclick="appendNumber('8')" class="btn">8</button>
+            <button onclick="appendNumber('9')" class="btn">9</button>
+            <button onclick="appendOperator('*')" class="btn operator">*</button>
+
+            <button onclick="appendNumber('4')" class="btn">4</button>
+            <button onclick="appendNumber('5')" class="btn">5</button>
+            <button onclick="appendNumber('6')" class="btn">6</button>
+            <button onclick="appendOperator('-')" class="btn operator">-</button>
+
+            <button onclick="appendNumber('1')" class="btn">1</button>
+            <button onclick="appendNumber('2')" class="btn">2</button>
+            <button onclick="appendNumber('3')" class="btn">3</button>
+            <button onclick="appendOperator('+')" class="btn operator">+</button>
+
+            <button onclick="appendNumber('0')" class="btn span-2">0</button>
+            <button onclick="appendDecimal()" class="btn">.</button>
+            <button onclick="calculateResult()" class="btn equals">=</button>
+        </div>
+    </div>
+
+    <script>
+        // --- JavaScript Code Starts Here ---
+        const display = document.getElementById('display');
+
+        // State variables
+        let currentInput = ''; // Stores the number currently being input
+        let operator = null;   // Stores the selected operator (+, -, *, /)
+        let previousInput = ''; // Stores the first operand for the calculation
+        let shouldResetDisplay = false; // Flag to clear display on next number input
+
+        /**
+         * Appends a number to the display.
+         * Resets display if needed (after operator or equals).
+         * @param {string} number - The number digit (0-9) to append.
+         */
+        function appendNumber(number) {
+            if (display.value === 'Error' || (shouldResetDisplay && operator !== null)) {
+                display.value = ''; // Clear display if it shows Error or ready for second operand
+                shouldResetDisplay = false;
+            }
+            // Handle initial zero and prevent multiple leading zeros
+            if (display.value === '0' && number !== '.') {
+               display.value = number;
+            } else {
+                display.value += number;
+            }
+            currentInput = display.value; // Keep currentInput state updated
+        }
+
+        /**
+         * Appends a decimal point if one doesn't already exist in the current number.
+         */
+        function appendDecimal() {
+             if (display.value === 'Error') return; // Don't allow decimal after error
+
+            if (shouldResetDisplay) { // Start fresh number with "0." if needed
+                display.value = '0.';
+                shouldResetDisplay = false;
+            } else if (!display.value.includes('.')) { // Append decimal only if not present
+                display.value += '.';
+            }
+            currentInput = display.value;
+        }
+
+        /**
+         * Handles operator button clicks (+, -, *, /).
+         * Stores the operator and the first operand. Calculates intermediate result if needed.
+         * @param {string} op - The operator clicked.
+         */
+        function appendOperator(op) {
+            if (display.value === 'Error' || display.value === '') return; // Ignore if error or empty
+
+            // If an operator is already set and we are entering the second number, calculate first
+            if (operator !== null && !shouldResetDisplay) {
+                calculateResult();
+                // If calculation resulted in error, stop here
+                if (display.value === 'Error') return;
+            }
+
+            operator = op;
+            previousInput = display.value; // Store current display value as first operand
+            shouldResetDisplay = true;     // Next number input should start a new display value
+        }
+
+        /**
+         * Clears the display and resets all calculator state variables.
+         */
+        function clearDisplay() {
+            display.value = '';
+            currentInput = '';
+            operator = null;
+            previousInput = '';
+            shouldResetDisplay = false;
+        }
+
+        /**
+         * Deletes the last character entered on the display (like Backspace).
+         */
+        function deleteLast() {
+            if (display.value === 'Error' || shouldResetDisplay) {
+                // If showing result or error, clear instead of deleting
+                clearDisplay();
+                return;
+            }
+            display.value = display.value.slice(0, -1);
+            currentInput = display.value;
+            // If deleting makes the display empty, reset state fully
+            if (display.value === '') {
+                clearDisplay();
+            }
+        }
+
+        /**
+         * Performs the calculation based on stored previousInput, operator, and current display value.
+         * Updates the display with the result or an 'Error' message.
+         */
+        function calculateResult() {
+            // Need an operator, a previous value, and shouldn't be waiting for second operand
+            if (operator === null || previousInput === '' || shouldResetDisplay) {
+                return;
+            }
+            if (display.value === 'Error') return; // Don't calculate if already error
+
+            const prev = parseFloat(previousInput);
+            const current = parseFloat(display.value); // Use current display value as second operand
+
+            // Check for valid numbers
+            if (isNaN(prev) || isNaN(current)) {
+                display.value = 'Error';
+                shouldResetDisplay = true;
+                operator = null; // Reset operator after error
+                return;
+            }
+
+            let result;
+            switch (operator) {
+                case '+':
+                    result = prev + current;
+                    break;
+                case '-':
+                    result = prev - current;
+                    break;
+                case '*':
+                    result = prev * current;
+                    break;
+                case '/':
+                    if (current === 0) {
+                        result = 'Error'; // Division by zero error
+                    } else {
+                        result = prev / current;
+                    }
+                    break;
+                default:
+                    return; // Exit if operator is somehow invalid
+            }
+
+            // Display result, format nicely, handle potential floating point inaccuracies
+            if (result === 'Error') {
+                display.value = 'Error';
+            } else {
+                 // Round to a reasonable number of decimal places to avoid floating point issues
+                 display.value = Number(result.toFixed(10)).toString();
+            }
+
+            // Reset for the next operation
+            operator = null;           // Clear the operator
+            previousInput = '';        // Clear the first operand memory
+            currentInput = display.value; // Store result as current potential operand
+            shouldResetDisplay = true; // Next number press should clear the result
+        }
+
+        // Initialize display (optional)
+        // clearDisplay(); // Start with empty display
+        // display.value = '0'; // Or start with 0
+
+        // --- JavaScript Code Ends Here ---
+    </script>
+
+</body>
+</html>
